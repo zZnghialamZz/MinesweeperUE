@@ -10,18 +10,16 @@ class FMenuBuilder;
 class FMinesweeperModule : public IModuleInterface
 {
 public:
-
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-	
+
 	/** This function will be bound to Command. */
-	void PluginButtonClicked();
-	
+	void OnMineSweeperButtonClicked();
+
 private:
-
-	void RegisterMenus();
-
+	void RegisterToolBarMenus();
+	TSharedRef<class SDockTab> OnSpawnMinesweeperTab(const FSpawnTabArgs& Args);
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;

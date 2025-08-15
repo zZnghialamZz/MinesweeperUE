@@ -8,15 +8,12 @@
 class FMinesweeperCommands : public TCommands<FMinesweeperCommands>
 {
 public:
-
 	FMinesweeperCommands()
-		: TCommands<FMinesweeperCommands>(TEXT("Minesweeper"), NSLOCTEXT("Contexts", "Minesweeper", "Minesweeper Plugin"), NAME_None, FMinesweeperStyle::GetStyleSetName())
-	{
-	}
+		: TCommands<FMinesweeperCommands>(TEXT("Minesweeper"), NSLOCTEXT("Contexts", "Minesweeper", "Minesweeper Plugin"), NAME_None, FMinesweeperStyle::GetStyleSetName()) {}
 
 	// TCommands<> interface
 	virtual void RegisterCommands() override;
 
 public:
-	TSharedPtr< FUICommandInfo > PluginAction;
+	TSharedPtr<FUICommandInfo> OpenMineSweeperWindow;
 };
