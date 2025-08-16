@@ -10,6 +10,7 @@ struct FMinesweeperTile
 {
 	bool bIsBomb = false;
 	bool bIsRevealed = false;
+	bool bIsFlagged = false;
 	int32 AdjacentBombs = 0;
 
 	FMinesweeperTile() = default;
@@ -32,10 +33,12 @@ private:
 	FSlateColor GetTileButtonTextColor(const int32 X, const int32 Y) const;
 	FSlateColor GetTileButtonBackgroundColor(const int32 X, const int32 Y) const;
 	bool IsTileButtonInteractable(const int32 X, const int32 Y) const;
+	void UpdateFlagCountDisplay();
 
 	// UI callbacks
 	FReply OnGenerateNewGameClicked();
 	FReply OnTileClicked(const int32 X, const int32 Y);
+	FReply OnTileRightClicked(const int32 X, const int32 Y);
 	void OnWidthUIValueChanged(const int32 NewValue);
 	void OnHeightUIValueChanged(const int32 NewValue);
 	void OnBombCountUIValueChanged(const int32 NewValue);
@@ -51,6 +54,7 @@ private:
 	void RevealAllBombs();
 	void RevealTile(const int32 X, const int32 Y);
 	void RevealAdjacentTiles(const int32 X, const int32 Y);
+	void ToggleFlag(const int32 X, const int32 Y);
 	bool IsValidCoordinate(const int32 X, const int32 Y) const;
 	int32 GetTileIndex(const int32 X, const int32 Y) const;
 
@@ -65,6 +69,7 @@ private:
 	int32 GridHeight = 10;
 	int32 BombCount = 10;
 	int32 RevealedTiles = 0;
+	int32 FlaggedTiles = 0;
 	bool bGameActive = false;
 	bool bGameWon = false;
 
@@ -74,6 +79,7 @@ private:
 	TSharedPtr<SSpinBox<int32>> HeightSpinBoxUI;
 	TSharedPtr<SSpinBox<int32>> BombCountSpinBoxUI;
 	TSharedPtr<STextBlock> GameStatusTextUI;
+	TSharedPtr<STextBlock> FlagCountTextUI;
 	int32 GridWidthUIValue = 10;
 	int32 GridHeightUIValue = 10;
 	int32 BombCountUIValue = 10;

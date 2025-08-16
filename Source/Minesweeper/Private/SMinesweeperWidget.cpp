@@ -4,6 +4,7 @@
 
 #include "MinesweeperLog.h"
 #include "SlateOptMacros.h"
+#include "SMinesweeperTileButton.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
@@ -136,12 +137,23 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateControlPanel()
 			]
 			+ SVerticalBox::Slot()
 			.FillHeight(1.0f)
-			.HAlign(HAlign_Right)
 			.Padding(8, 4)
 			[
-				SAssignNew(GameStatusTextUI, STextBlock)
-				.Text(FText::FromString(TEXT("Ready to play! Click the button above to start!")))
-				.Justification(ETextJustify::Right)
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				[
+					SAssignNew(FlagCountTextUI, STextBlock)
+					.Text(FText::FromString(TEXT("Flags: 0/10")))
+					.Justification(ETextJustify::Left)
+				]
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Right)
+				[
+					SAssignNew(GameStatusTextUI, STextBlock)
+					.Text(FText::FromString(TEXT("Ready to play! Click the button above to start!")))
+					.Justification(ETextJustify::Right)
+				]
 			];
 }
 
@@ -152,13 +164,11 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateGameBoard()
 
 TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const int32 Y)
 {
-	TSharedRef<SButton> NewTileButton = SNew(SButton)
-		.ContentPadding(0)
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
+	TSharedRef<SButton> NewTileButton = SNew(SMinesweeperTileButton)
 		.IsEnabled(this, &SMinesweeperWidget::IsTileButtonInteractable, X, Y)
 		.ButtonColorAndOpacity(this, &SMinesweeperWidget::GetTileButtonBackgroundColor, X, Y)
 		.OnClicked(this, &SMinesweeperWidget::OnTileClicked, X, Y)
+		.OnRightClicked(this, &SMinesweeperWidget::OnTileRightClicked, X, Y)
 		[
 			SNew(SBox)
 			.WidthOverride(25)
@@ -282,6 +292,8 @@ bool SMinesweeperWidget::IsTileButtonInteractable(const int32 X, const int32 Y) 
 	return false;
 }
 
+void SMinesweeperWidget::UpdateFlagCountDisplay() {}
+
 FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 {
 	// Update these value at the time user press generate new grid, the ui value can be changed afterward.
@@ -297,6 +309,12 @@ FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 FReply SMinesweeperWidget::OnTileClicked(const int32 X, const int32 Y)
 {
 	RevealTile(X, Y);
+	return FReply::Handled();
+}
+
+FReply SMinesweeperWidget::OnTileRightClicked(const int32 X, const int32 Y)
+{
+	MS_DISPLAY("Place flag in tile [%d - %d]", X, Y);
 	return FReply::Handled();
 }
 
@@ -343,7 +361,26 @@ void SMinesweeperWidget::GameOver()
 void SMinesweeperWidget::CheckWinCondition()
 {
 	const int32 TotalNonBombTiles = GridWidth * GridHeight - BombCount;
-	if (RevealedTiles >= TotalNonBombTiles)
+	const bool bAllNonBombTilesRevealed = RevealedTiles >= TotalNonBombTiles;
+
+	// Also check if all bombs are correctly flagged
+	int32 CorrectlyFlaggedBombs = 0;
+	bool bPlaceWrongFlag = false;
+	for (const auto& Tile : GameBoardTiles)
+	{
+		if (Tile.bIsBomb && Tile.bIsFlagged)
+		{
+			CorrectlyFlaggedBombs++;
+		}
+		// Check for incorrectly flagged tiles (flagged but not a bomb)
+		else if (!Tile.bIsBomb && Tile.bIsFlagged)
+		{
+			bPlaceWrongFlag = true;
+		}
+	}
+	const bool bPerfectlyFlagged = CorrectlyFlaggedBombs == BombCount && !bPlaceWrongFlag;
+
+	if (bAllNonBombTilesRevealed || bPerfectlyFlagged)
 	{
 		bGameActive = false;
 		bGameWon = true;
@@ -394,6 +431,7 @@ void SMinesweeperWidget::GenerateBoardTiles()
 
 	bGameActive = true;
 	RevealedTiles = 0;
+	FlaggedTiles = 0;
 
 	if (GameStatusTextUI.IsValid())
 	{
@@ -482,7 +520,7 @@ void SMinesweeperWidget::RevealTile(const int32 X, const int32 Y)
 	}
 
 	FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
-	if (Tile.bIsRevealed)
+	if (Tile.bIsRevealed || Tile.bIsFlagged)
 		return;
 
 	Tile.bIsRevealed = true;
@@ -521,6 +559,37 @@ void SMinesweeperWidget::RevealAdjacentTiles(const int32 X, const int32 Y)
 			}
 		}
 	}
+}
+
+void SMinesweeperWidget::ToggleFlag(const int32 X, const int32 Y)
+{
+	if (!bGameActive || !IsValidCoordinate(X, Y))
+		return;
+
+	FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
+
+	// Can't flag already revealed tiles
+	if (Tile.bIsRevealed)
+		return;
+
+	if (Tile.bIsFlagged)
+	{
+		// Remove flag
+		Tile.bIsFlagged = false;
+		FlaggedTiles--;
+	}
+	else
+	{
+		// Add flag (only if we haven't exceeded bomb count)
+		if (FlaggedTiles < BombCount)
+		{
+			Tile.bIsFlagged = true;
+			FlaggedTiles++;
+		}
+	}
+
+	UpdateFlagCountDisplay();
+	CheckWinCondition();
 }
 
 bool SMinesweeperWidget::IsValidCoordinate(const int32 X, const int32 Y) const
