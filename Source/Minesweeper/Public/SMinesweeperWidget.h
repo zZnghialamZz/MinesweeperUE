@@ -37,12 +37,12 @@ private:
 	TSharedRef<SWidget> CreateControlPanel();
 	TSharedRef<SWidget> CreateGameBoard();
 	TSharedRef<SWidget> CreateTileButton(const int32 X, const int32 Y);
-	FText GetTileButtonText(int32 X, int32 Y) const;
-	FSlateColor GetTileButtonColor(int32 X, int32 Y) const;
+	FText GetTileButtonText(const int32 X, const int32 Y) const;
+	FSlateColor GetTileButtonColor(const int32 X, const int32 Y) const;
 
 	// UI callbacks
 	FReply OnGenerateNewGameClicked();
-	FReply OnTileClicked(int32 X, int32 Y);
+	FReply OnTileClicked(const int32 X, const int32 Y);
 	void OnWidthUIValueChanged(const int32 NewValue);
 	void OnHeightUIValueChanged(const int32 NewValue);
 	void OnBombCountUIValueChanged(const int32 NewValue);
@@ -53,6 +53,7 @@ private:
 	void GenerateBoardTiles();
 	void PlaceBombsRandomly();
 	void CalculateAdjacentBombs();
+	void RevealTile(const int32 X, const int32 Y);
 	bool IsValidCoordinate(const int32 X, const int32 Y) const;
 	int32 GetTileIndex(const int32 X, const int32 Y) const;
 

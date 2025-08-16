@@ -3,6 +3,7 @@
 
 #include "SMinesweeperWidget.h"
 
+#include "MinesweeperLog.h"
 #include "SlateOptMacros.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 
@@ -153,7 +154,6 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateGameBoard()
 TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const int32 Y)
 {
 	TSharedRef<SButton> NewTileButton = SNew(SButton)
-		//.ButtonStyle(FAppStyle::Get(), "FlatButton")
 		.ContentPadding(0)
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
@@ -179,7 +179,10 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const in
 FText SMinesweeperWidget::GetTileButtonText(const int32 X, const int32 Y) const
 {
 	if (!IsValidCoordinate(X, Y))
+	{
+		MS_WARNING("Invalid tile coordinate at [%d, %d]", X, Y);
 		return FText::GetEmpty();
+	}
 
 	const FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
 	if (!Tile.bIsRevealed)
@@ -202,7 +205,10 @@ FText SMinesweeperWidget::GetTileButtonText(const int32 X, const int32 Y) const
 FSlateColor SMinesweeperWidget::GetTileButtonColor(const int32 X, const int32 Y) const
 {
 	if (!IsValidCoordinate(X, Y))
+	{
+		MS_WARNING("Invalid tile coordinate at [%d, %d]", X, Y);
 		return FSlateColor::UseForeground();
+	}
 
 	const FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
 
@@ -242,19 +248,19 @@ FSlateColor SMinesweeperWidget::GetTileButtonColor(const int32 X, const int32 Y)
 
 FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 {
-	// Maintain these value at the time user press generate new grid, the ui value can be changed afterward.
-	// But the value use for game is only updated when user press this button.
+	// Update these value at the time user press generate new grid, the ui value can be changed afterward.
+	// But the value use for game is only updated when user press this button. This is to prevent any bug
+	// happens when the player is still playing on current board but decide to update the UI value.
 	GridWidth = GridWidthUIValue;
 	GridHeight = GridHeightUIValue;
 	BombCount = BombCountUIValue;
-	ResetGame();
-	GenerateBoardTiles();
+	InitializeGame();
 	return FReply::Handled();
 }
 
-FReply SMinesweeperWidget::OnTileClicked(int32 X, int32 Y)
+FReply SMinesweeperWidget::OnTileClicked(const int32 X, const int32 Y)
 {
-	// TODO
+	RevealTile(X, Y);
 	return FReply::Handled();
 }
 
@@ -302,7 +308,7 @@ void SMinesweeperWidget::GenerateBoardTiles()
 	{
 		GameBoardGridUI->ClearChildren();
 		TileButtons.Empty();
-		
+
 		for (int32 Y = 0; Y < GridHeight; ++Y)
 		{
 			for (int32 X = 0; X < GridWidth; ++X)
@@ -314,6 +320,11 @@ void SMinesweeperWidget::GenerateBoardTiles()
 				];
 			}
 		}
+	}
+	else
+	{
+		MS_ERROR("GameBoardGridUI is not valid, please re-check UI code!");
+		return;
 	}
 
 	bGameActive = true;
@@ -383,6 +394,15 @@ void SMinesweeperWidget::CalculateAdjacentBombs()
 			}
 		}
 	}
+}
+
+void SMinesweeperWidget::RevealTile(const int32 X, const int32 Y)
+{
+	if (!bGameActive || !IsValidCoordinate(X, Y))
+		return;
+
+	FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
+	// TODO
 }
 
 bool SMinesweeperWidget::IsValidCoordinate(const int32 X, const int32 Y) const
