@@ -48,6 +48,8 @@ private:
 	void OnBombCountUIValueChanged(const int32 NewValue);
 
 	// Game logic
+	void InitializeGame();
+	void ResetGame();
 	void GenerateBoardTiles();
 	void PlaceBombsRandomly();
 	void CalculateAdjacentBombs();
@@ -61,9 +63,9 @@ private:
 	
 	// Game states
 	TArray<FMinesweeperTile> GameBoardTiles;
-	int32 GridWidth = 0;
-	int32 GridHeight = 0;
-	int32 BombCount = 0;
+	int32 GridWidth = 10;
+	int32 GridHeight = 10;
+	int32 BombCount = 3;
 	int32 RevealedTiles = 0;
 	bool bGameActive = false;
 	bool bGameWon = false;

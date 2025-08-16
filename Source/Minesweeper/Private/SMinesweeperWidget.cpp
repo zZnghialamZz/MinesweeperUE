@@ -44,6 +44,8 @@ void SMinesweeperWidget::Construct(const FArguments& InArgs)
 			]
 		]
 	];
+
+	InitializeGame();
 }
 
 TSharedRef<SWidget> SMinesweeperWidget::CreateControlPanel()
@@ -245,6 +247,7 @@ FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 	GridWidth = GridWidthUIValue;
 	GridHeight = GridHeightUIValue;
 	BombCount = BombCountUIValue;
+	ResetGame();
 	GenerateBoardTiles();
 	return FReply::Handled();
 }
@@ -268,6 +271,18 @@ void SMinesweeperWidget::OnHeightUIValueChanged(const int32 NewValue)
 void SMinesweeperWidget::OnBombCountUIValueChanged(const int32 NewValue)
 {
 	BombCountUIValue = FMath::Clamp(NewValue, 0, BombCountMax);
+}
+
+void SMinesweeperWidget::InitializeGame()
+{
+	ResetGame();
+	GenerateBoardTiles();
+}
+
+void SMinesweeperWidget::ResetGame()
+{
+	bGameActive = false;
+	bGameWon = false;
 }
 
 void SMinesweeperWidget::GenerateBoardTiles()
