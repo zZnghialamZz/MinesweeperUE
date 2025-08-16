@@ -73,8 +73,8 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateControlPanel()
 						SAssignNew(WidthSpinBoxUI, SSpinBox<int32>)
 						.MinValue(GameGridMin)
 						.MaxValue(GameGridMax)
-						.Value(GridWidth)
-						.OnValueChanged(this, &SMinesweeperWidget::OnWidthChanged)
+						.Value(GridWidthUIValue)
+						.OnValueChanged(this, &SMinesweeperWidget::OnWidthUIValueChanged)
 					]
 				]
 				+ SHorizontalBox::Slot()
@@ -95,8 +95,8 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateControlPanel()
 						SAssignNew(HeightSpinBoxUI, SSpinBox<int32>)
 						.MinValue(GameGridMin)
 						.MaxValue(GameGridMax)
-						.Value(GridHeight)
-						.OnValueChanged(this, &SMinesweeperWidget::OnHeightChanged)
+						.Value(GridHeightUIValue)
+						.OnValueChanged(this, &SMinesweeperWidget::OnHeightUIValueChanged)
 					]
 				]
 			]
@@ -119,8 +119,8 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateControlPanel()
 					SAssignNew(BombCountSpinBoxUI, SSpinBox<int32>)
 					.MinValue(0)
 					.MaxValue(BombCountMax)
-					.Value(BombCount)
-					.OnValueChanged(this, &SMinesweeperWidget::OnBombCountChanged)
+					.Value(BombCountUIValue)
+					.OnValueChanged(this, &SMinesweeperWidget::OnBombCountUIValueChanged)
 				]
 			]
 			// Generate new grid button area
@@ -148,25 +148,126 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateGameBoard()
 	return SAssignNew(GameBoardGridUI, SUniformGridPanel);
 }
 
+TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const int32 Y)
+{
+	TSharedRef<SButton> NewTileButton = SNew(SButton)
+		//.ButtonStyle(FAppStyle::Get(), "FlatButton")
+		.ContentPadding(0)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		.OnClicked(this, &SMinesweeperWidget::OnTileClicked, X, Y)
+		[
+			SNew(SBox)
+			.WidthOverride(25)
+			.HeightOverride(25)
+			[
+				SNew(STextBlock)
+				.Text(this, &SMinesweeperWidget::GetTileButtonText, X, Y)
+				.ColorAndOpacity(this, &SMinesweeperWidget::GetTileButtonColor, X, Y)
+				.Justification(ETextJustify::Center)
+			]
+		];
+
+	const int32 TileIndex = GetTileIndex(X, Y);
+
+	TileButtons.Add(TileIndex, NewTileButton);
+	return NewTileButton;
+}
+
+FText SMinesweeperWidget::GetTileButtonText(const int32 X, const int32 Y) const
+{
+	if (!IsValidCoordinate(X, Y))
+		return FText::GetEmpty();
+
+	const FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
+	if (!Tile.bIsRevealed)
+	{
+		return FText::FromString(TEXT(""));
+	}
+
+	if (Tile.bIsBomb)
+	{
+		return FText::FromString(TEXT("💣"));
+	}
+
+	if (Tile.AdjacentBombs > 0)
+	{
+		return FText::AsNumber(Tile.AdjacentBombs);
+	}
+	return FText::GetEmpty();
+}
+
+FSlateColor SMinesweeperWidget::GetTileButtonColor(const int32 X, const int32 Y) const
+{
+	if (!IsValidCoordinate(X, Y))
+		return FSlateColor::UseForeground();
+
+	const FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
+
+	if (Tile.bIsBomb && Tile.bIsRevealed)
+	{
+		return FSlateColor(FLinearColor::Red);
+	}
+
+	if (Tile.bIsRevealed && Tile.AdjacentBombs > 0)
+	{
+		// Color code numbers based on count
+		switch (Tile.AdjacentBombs)
+		{
+			case 1:
+				return FSlateColor(FLinearColor::Blue);
+			case 2:
+				return FSlateColor(FLinearColor::Green);
+			case 3:
+				return FSlateColor(FLinearColor::Red);
+			case 4:
+				return FSlateColor(FLinearColor(0.5f, 0.0f, 0.5f, 1.0f)); // Purple
+			case 5:
+				return FSlateColor(FLinearColor(0.5f, 0.0f, 0.0f, 1.0f)); // Maroon
+			case 6:
+				return FSlateColor(FLinearColor(0.0f, 0.5f, 0.5f, 1.0f)); // Teal
+			case 7:
+				return FSlateColor(FLinearColor::Black);
+			case 8:
+				return FSlateColor(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f)); // Gray
+			default:
+				return FSlateColor::UseForeground();
+		}
+	}
+
+	return FSlateColor::UseForeground();
+}
+
 FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 {
+	// Maintain these value at the time user press generate new grid, the ui value can be changed afterward.
+	// But the value use for game is only updated when user press this button.
+	GridWidth = GridWidthUIValue;
+	GridHeight = GridHeightUIValue;
+	BombCount = BombCountUIValue;
 	GenerateBoardTiles();
 	return FReply::Handled();
 }
 
-void SMinesweeperWidget::OnWidthChanged(const int32 NewValue)
+FReply SMinesweeperWidget::OnTileClicked(int32 X, int32 Y)
 {
-	GridWidth = FMath::Clamp(NewValue, GameGridMin, GameGridMax);
+	// TODO
+	return FReply::Handled();
 }
 
-void SMinesweeperWidget::OnHeightChanged(const int32 NewValue)
+void SMinesweeperWidget::OnWidthUIValueChanged(const int32 NewValue)
 {
-	GridHeight = FMath::Clamp(NewValue, GameGridMin, GameGridMax);
+	GridWidthUIValue = FMath::Clamp(NewValue, GameGridMin, GameGridMax);
 }
 
-void SMinesweeperWidget::OnBombCountChanged(const int32 NewValue)
+void SMinesweeperWidget::OnHeightUIValueChanged(const int32 NewValue)
 {
-	BombCount = FMath::Clamp(NewValue, 0, BombCountMax);
+	GridHeightUIValue = FMath::Clamp(NewValue, GameGridMin, GameGridMax);
+}
+
+void SMinesweeperWidget::OnBombCountUIValueChanged(const int32 NewValue)
+{
+	BombCountUIValue = FMath::Clamp(NewValue, 0, BombCountMax);
 }
 
 void SMinesweeperWidget::GenerateBoardTiles()
@@ -184,8 +285,20 @@ void SMinesweeperWidget::GenerateBoardTiles()
 	// Rebuild the UI
 	if (GameBoardGridUI.IsValid())
 	{
-		// TODO: Generate Tile UI
 		GameBoardGridUI->ClearChildren();
+		TileButtons.Empty();
+		
+		for (int32 Y = 0; Y < GridHeight; ++Y)
+		{
+			for (int32 X = 0; X < GridWidth; ++X)
+			{
+				TSharedRef<SWidget> TileWidget = CreateTileButton(X, Y);
+				GameBoardGridUI->AddSlot(X, Y)
+				[
+					TileWidget
+				];
+			}
+		}
 	}
 
 	bGameActive = true;

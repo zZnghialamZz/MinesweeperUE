@@ -36,12 +36,16 @@ private:
 	// UI generation
 	TSharedRef<SWidget> CreateControlPanel();
 	TSharedRef<SWidget> CreateGameBoard();
+	TSharedRef<SWidget> CreateTileButton(const int32 X, const int32 Y);
+	FText GetTileButtonText(int32 X, int32 Y) const;
+	FSlateColor GetTileButtonColor(int32 X, int32 Y) const;
 
 	// UI callbacks
 	FReply OnGenerateNewGameClicked();
-	void OnWidthChanged(const int32 NewValue);
-	void OnHeightChanged(const int32 NewValue);
-	void OnBombCountChanged(const int32 NewValue);
+	FReply OnTileClicked(int32 X, int32 Y);
+	void OnWidthUIValueChanged(const int32 NewValue);
+	void OnHeightUIValueChanged(const int32 NewValue);
+	void OnBombCountUIValueChanged(const int32 NewValue);
 
 	// Game logic
 	void GenerateBoardTiles();
@@ -57,9 +61,9 @@ private:
 	
 	// Game states
 	TArray<FMinesweeperTile> GameBoardTiles;
-	int32 GridWidth = 10;
-	int32 GridHeight = 10;
-	int32 BombCount = 3;
+	int32 GridWidth = 0;
+	int32 GridHeight = 0;
+	int32 BombCount = 0;
 	int32 RevealedTiles = 0;
 	bool bGameActive = false;
 	bool bGameWon = false;
@@ -70,4 +74,10 @@ private:
 	TSharedPtr<SSpinBox<int32>> HeightSpinBoxUI;
 	TSharedPtr<SSpinBox<int32>> BombCountSpinBoxUI;
 	TSharedPtr<STextBlock> GameStatusTextUI;
+	int32 GridWidthUIValue = 10;
+	int32 GridHeightUIValue = 10;
+	int32 BombCountUIValue = 3;
+
+	// Tile buttons cache for updates
+	TMap<int32, TSharedPtr<SButton>> TileButtons;
 };
