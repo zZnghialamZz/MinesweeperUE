@@ -6,20 +6,11 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Input/SSpinBox.h"
 
-UENUM()
-enum class EMinesweeperTileState : uint8
-{
-	Hidden,
-	Revealed,
-	Bomb
-};
-
 struct FMinesweeperTile
 {
 	bool bIsBomb = false;
 	bool bIsRevealed = false;
 	int32 AdjacentBombs = 0;
-	EMinesweeperTileState State = EMinesweeperTileState::Hidden;
 
 	FMinesweeperTile() = default;
 };
@@ -66,7 +57,7 @@ private:
 private:
 	static constexpr int GameGridMin = 5;
 	static constexpr int GameGridMax = 50;
-	static constexpr int BombCountMax = 30;
+	static constexpr int BombCountMax = 100;
 	
 	// Game states
 	TArray<FMinesweeperTile> GameBoardTiles;

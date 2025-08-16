@@ -397,7 +397,7 @@ void SMinesweeperWidget::GenerateBoardTiles()
 
 	if (GameStatusTextUI.IsValid())
 	{
-		GameStatusTextUI->SetText(FText::FromString(TEXT("Game Started! Click tiles to reveal them.")));
+		GameStatusTextUI->SetText(FText::FromString(TEXT("Game Started! Left-click to reveal, right-click to flag.")));
 	}
 }
 
@@ -469,18 +469,8 @@ void SMinesweeperWidget::RevealAllBombs()
 		if (GameBoardTiles[i].bIsBomb)
 		{
 			GameBoardTiles[i].bIsRevealed = true;
-			GameBoardTiles[i].State = EMinesweeperTileState::Bomb;
 		}
 	}
-	//
-	// // Update all tile buttons
-	// for (auto& ButtonPair : TileButtons)
-	// {
-	// 	if (ButtonPair.Value.IsValid())
-	// 	{
-	// 		ButtonPair.Value->Invalidate(EInvalidateWidget::Layout);
-	// 	}
-	// }
 }
 
 void SMinesweeperWidget::RevealTile(const int32 X, const int32 Y)
@@ -500,28 +490,15 @@ void SMinesweeperWidget::RevealTile(const int32 X, const int32 Y)
 
 	if (Tile.bIsBomb)
 	{
-		Tile.State = EMinesweeperTileState::Bomb;
 		GameOver();
 		return;
 	}
-
-	Tile.State = EMinesweeperTileState::Revealed;
 
 	// Auto-reveal adjacent tiles if this tile has no adjacent bombs
 	if (Tile.AdjacentBombs == 0)
 	{
 		RevealAdjacentTiles(X, Y);
 	}
-
-	// Update the button appearance
-	// if (const TSharedPtr<SButton>* ButtonPtr = TileButtons.Find(GetTileIndex(X, Y)))
-	// {
-	// 	if (const TSharedPtr<SButton> Button = *ButtonPtr)
-	// 	{
-	// 		// Force refresh by invalidating
-	// 		Button->Invalidate(EInvalidateWidget::Layout);
-	// 	}
-	// }
 
 	CheckWinCondition();
 }
