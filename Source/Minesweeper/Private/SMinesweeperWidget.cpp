@@ -48,49 +48,77 @@ void SMinesweeperWidget::Construct(const FArguments& InArgs)
 
 TSharedRef<SWidget> SMinesweeperWidget::CreateControlPanel()
 {
-	return SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.Padding(10, 0)
+	return SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0, 5)
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
-			.Padding(0, 5)
+			.Padding(10, 0)
 			[
-				SNew(STextBlock).Text(FText::FromString("Width: "))
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(0, 5)
+				[
+					SNew(STextBlock).Text(FText::FromString("Width: "))
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.MinWidth(100)
+				[
+					SAssignNew(WidthSpinBox, SSpinBox<uint32>)
+					.MinValue(GameGridMin)
+					.MaxValue(GameGridMax)
+					.Value(GridWidth)
+					.OnValueChanged(this, &SMinesweeperWidget::OnWidthChanged)
+				]
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
-			.MinWidth(100)
+			.Padding(10, 0)
 			[
-				SAssignNew(WidthSpinBox, SSpinBox<uint32>)
-				.MinValue(GameGridMin)
-				.MaxValue(GameGridMax)
-				.Value(GridWidth)
-				.OnValueChanged(this, &SMinesweeperWidget::OnWidthChanged)
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(0, 5)
+				[
+					SNew(STextBlock).Text(FText::FromString("Height: "))
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.MinWidth(100)
+				[
+					SAssignNew(HeightSpinBox, SSpinBox<uint32>)
+					.MinValue(GameGridMin)
+					.MaxValue(GameGridMax)
+					.Value(GridHeight)
+					.OnValueChanged(this, &SMinesweeperWidget::OnHeightChanged)
+				]
 			]
 		]
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.Padding(10, 0)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0, 5)
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
-			.Padding(0, 5)
+			.Padding(10, 5, 0 , 5)
 			[
-				SNew(STextBlock).Text(FText::FromString("Height: "))
+				SNew(STextBlock).Text(FText::FromString(TEXT("Number of Mines:")))
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.MinWidth(100)
 			[
-				SAssignNew(HeightSpinBox, SSpinBox<uint32>)
-				.MinValue(GameGridMin)
-				.MaxValue(GameGridMax)
-				.Value(GridHeight)
-				.OnValueChanged(this, &SMinesweeperWidget::OnHeightChanged)
+				SAssignNew(BombCountSpinBox, SSpinBox<uint32>)
+				.MinValue(0)
+				.MaxValue(BombCountMax)
+				.Value(BombCount)
+				.OnValueChanged(this, &SMinesweeperWidget::OnBombCountChanged)
 			]
 		];
 }
@@ -108,6 +136,11 @@ void SMinesweeperWidget::OnWidthChanged(const uint32 NewValue)
 void SMinesweeperWidget::OnHeightChanged(const uint32 NewValue)
 {
 	GridHeight = FMath::Clamp(NewValue, GameGridMin, GameGridMax);
+}
+
+void SMinesweeperWidget::OnBombCountChanged(const uint32 NewValue)
+{
+	BombCount = FMath::Clamp(NewValue, 0, BombCountMax);
 }
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION
