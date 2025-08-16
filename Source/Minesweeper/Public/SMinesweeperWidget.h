@@ -38,9 +38,17 @@ private:
 	TSharedRef<SWidget> CreateGameBoard();
 
 	// UI callbacks
-	void OnWidthChanged(const uint32 NewValue);
-	void OnHeightChanged(const uint32 NewValue);
-	void OnBombCountChanged(const uint32 NewValue);
+	FReply OnGenerateNewGameClicked();
+	void OnWidthChanged(const int32 NewValue);
+	void OnHeightChanged(const int32 NewValue);
+	void OnBombCountChanged(const int32 NewValue);
+
+	// Game logic
+	void GenerateBoardTiles();
+	void PlaceBombsRandomly();
+	void CalculateAdjacentBombs();
+	bool IsValidCoordinate(const int32 X, const int32 Y) const;
+	int32 GetTileIndex(const int32 X, const int32 Y) const;
 
 private:
 	static constexpr int GameGridMin = 5;
@@ -49,16 +57,17 @@ private:
 	
 	// Game states
 	TArray<FMinesweeperTile> GameBoardTiles;
-	uint32 GridWidth = 10;
-	uint32 GridHeight = 10;
-	uint32 BombCount = 3;
-	uint32 RevealedTiles = 0;
+	int32 GridWidth = 10;
+	int32 GridHeight = 10;
+	int32 BombCount = 3;
+	int32 RevealedTiles = 0;
 	bool bGameActive = false;
 	bool bGameWon = false;
 
 	// UI Components
-	TSharedPtr<class SUniformGridPanel> GameBoardGrid;
-	TSharedPtr<SSpinBox<uint32>> WidthSpinBox;
-	TSharedPtr<SSpinBox<uint32>> HeightSpinBox;
-	TSharedPtr<SSpinBox<uint32>> BombCountSpinBox;
+	TSharedPtr<class SUniformGridPanel> GameBoardGridUI;
+	TSharedPtr<SSpinBox<int32>> WidthSpinBoxUI;
+	TSharedPtr<SSpinBox<int32>> HeightSpinBoxUI;
+	TSharedPtr<SSpinBox<int32>> BombCountSpinBoxUI;
+	TSharedPtr<STextBlock> GameStatusTextUI;
 };
