@@ -3,6 +3,8 @@
 #include "Minesweeper.h"
 #include "MinesweeperStyle.h"
 #include "MinesweeperCommands.h"
+#include "SMinesweeperWidget.h"
+
 #include "Misc/MessageDialog.h"
 #include "ToolMenus.h"
 
@@ -20,7 +22,6 @@ void FMinesweeperModule::StartupModule()
 	FMinesweeperCommands::Register();
 
 	PluginCommands = MakeShareable(new FUICommandList);
-
 	PluginCommands->MapAction(
 		FMinesweeperCommands::Get().OpenMineSweeperWindow,
 		FExecuteAction::CreateRaw(this, &FMinesweeperModule::OnMineSweeperButtonClicked),
@@ -73,13 +74,12 @@ void FMinesweeperModule::RegisterToolBarMenus()
 	}
 }
 
-TSharedRef<class SDockTab> FMinesweeperModule::OnSpawnMinesweeperTab(const FSpawnTabArgs& Args)
+TSharedRef<SDockTab> FMinesweeperModule::OnSpawnMinesweeperTab(const FSpawnTabArgs& Args)
 {
 	return SNew(SDockTab)
 		.TabRole(ETabRole::NomadTab)
 		[
-			// TODO: Widget
-			SNew(SBox)
+			SNew(SMinesweeperWidget)
 		];
 }
 

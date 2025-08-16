@@ -7,12 +7,13 @@
 class FMinesweeperStyle
 {
 public:
+	static const ISlateStyle& Get();
+	
 	static void Initialize();
 	static void Shutdown();
-
-	static void ReloadTextures();
-	static const ISlateStyle& Get();
+	
 	static FName GetStyleSetName();
+	static void ReloadTextures();
 
 private:
 	static TSharedRef<class FSlateStyleSet> Create();

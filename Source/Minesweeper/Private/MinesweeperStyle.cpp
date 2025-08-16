@@ -10,6 +10,11 @@
 
 TSharedPtr<FSlateStyleSet> FMinesweeperStyle::StyleInstance = nullptr;
 
+const ISlateStyle& FMinesweeperStyle::Get()
+{
+	return *StyleInstance;
+}
+
 void FMinesweeperStyle::Initialize()
 {
 	if (!StyleInstance.IsValid())
@@ -50,9 +55,4 @@ void FMinesweeperStyle::ReloadTextures()
 	{
 		FSlateApplication::Get().GetRenderer()->ReloadTextureResources();
 	}
-}
-
-const ISlateStyle& FMinesweeperStyle::Get()
-{
-	return *StyleInstance;
 }

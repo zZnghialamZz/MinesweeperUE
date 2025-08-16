@@ -14,7 +14,6 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	/** This function will be bound to Command. */
 	void OnMineSweeperButtonClicked();
 
 private:

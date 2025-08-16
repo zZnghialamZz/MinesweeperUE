@@ -22,12 +22,13 @@ public class Minesweeper : ModuleRules
 				"Projects",
 				"InputCore",
 				"EditorFramework",
+				"EditorStyle",
 				"UnrealEd",
 				"ToolMenus",
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore",
+				"SlateCore"
 			}
 		);
 	}
