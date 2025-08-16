@@ -38,7 +38,9 @@ private:
 	TSharedRef<SWidget> CreateGameBoard();
 	TSharedRef<SWidget> CreateTileButton(const int32 X, const int32 Y);
 	FText GetTileButtonText(const int32 X, const int32 Y) const;
-	FSlateColor GetTileButtonColor(const int32 X, const int32 Y) const;
+	FSlateColor GetTileButtonTextColor(const int32 X, const int32 Y) const;
+	FSlateColor GetTileButtonBackgroundColor(const int32 X, const int32 Y) const;
+	bool IsTileButtonInteractable(const int32 X, const int32 Y) const;
 
 	// UI callbacks
 	FReply OnGenerateNewGameClicked();
@@ -50,10 +52,14 @@ private:
 	// Game logic
 	void InitializeGame();
 	void ResetGame();
+	void GameOver();
+	void CheckWinCondition();
 	void GenerateBoardTiles();
 	void PlaceBombsRandomly();
 	void CalculateAdjacentBombs();
+	void RevealAllBombs();
 	void RevealTile(const int32 X, const int32 Y);
+	void RevealAdjacentTiles(const int32 X, const int32 Y);
 	bool IsValidCoordinate(const int32 X, const int32 Y) const;
 	int32 GetTileIndex(const int32 X, const int32 Y) const;
 
@@ -66,7 +72,7 @@ private:
 	TArray<FMinesweeperTile> GameBoardTiles;
 	int32 GridWidth = 10;
 	int32 GridHeight = 10;
-	int32 BombCount = 3;
+	int32 BombCount = 10;
 	int32 RevealedTiles = 0;
 	bool bGameActive = false;
 	bool bGameWon = false;
@@ -79,7 +85,7 @@ private:
 	TSharedPtr<STextBlock> GameStatusTextUI;
 	int32 GridWidthUIValue = 10;
 	int32 GridHeightUIValue = 10;
-	int32 BombCountUIValue = 3;
+	int32 BombCountUIValue = 10;
 
 	// Tile buttons cache for updates
 	TMap<int32, TSharedPtr<SButton>> TileButtons;

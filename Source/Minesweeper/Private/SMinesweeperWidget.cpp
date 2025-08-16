@@ -1,5 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "SMinesweeperWidget.h"
 
@@ -157,6 +156,8 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const in
 		.ContentPadding(0)
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
+		.IsEnabled(this, &SMinesweeperWidget::IsTileButtonInteractable, X, Y)
+		.ButtonColorAndOpacity(this, &SMinesweeperWidget::GetTileButtonBackgroundColor, X, Y)
 		.OnClicked(this, &SMinesweeperWidget::OnTileClicked, X, Y)
 		[
 			SNew(SBox)
@@ -165,7 +166,7 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const in
 			[
 				SNew(STextBlock)
 				.Text(this, &SMinesweeperWidget::GetTileButtonText, X, Y)
-				.ColorAndOpacity(this, &SMinesweeperWidget::GetTileButtonColor, X, Y)
+				.ColorAndOpacity(this, &SMinesweeperWidget::GetTileButtonTextColor, X, Y)
 				.Justification(ETextJustify::Center)
 			]
 		];
@@ -202,7 +203,7 @@ FText SMinesweeperWidget::GetTileButtonText(const int32 X, const int32 Y) const
 	return FText::GetEmpty();
 }
 
-FSlateColor SMinesweeperWidget::GetTileButtonColor(const int32 X, const int32 Y) const
+FSlateColor SMinesweeperWidget::GetTileButtonTextColor(const int32 X, const int32 Y) const
 {
 	if (!IsValidCoordinate(X, Y))
 	{
@@ -223,27 +224,62 @@ FSlateColor SMinesweeperWidget::GetTileButtonColor(const int32 X, const int32 Y)
 		switch (Tile.AdjacentBombs)
 		{
 			case 1:
-				return FSlateColor(FLinearColor::Blue);
+				return FSlateColor(FLinearColor(0.0f, 1.0f, 1.0f, 1.0f)); // Cyan
 			case 2:
 				return FSlateColor(FLinearColor::Green);
 			case 3:
-				return FSlateColor(FLinearColor::Red);
+				return FSlateColor(FLinearColor::Yellow);
 			case 4:
-				return FSlateColor(FLinearColor(0.5f, 0.0f, 0.5f, 1.0f)); // Purple
+				return FSlateColor(FLinearColor(1.0f, 0.5f, 0.0f, 1.0f)); // Orange
 			case 5:
-				return FSlateColor(FLinearColor(0.5f, 0.0f, 0.0f, 1.0f)); // Maroon
+				return FSlateColor(FLinearColor(1.0f, 0.7f, 0.7f, 1.0f)); // Pink
 			case 6:
-				return FSlateColor(FLinearColor(0.0f, 0.5f, 0.5f, 1.0f)); // Teal
+				return FSlateColor(FLinearColor(0.5f, 0.0f, 0.5f, 1.0f)); // Purple
 			case 7:
-				return FSlateColor(FLinearColor::Black);
+				return FSlateColor(FLinearColor(0.5f, 0.0f, 0.0f, 1.0f)); // Maroon
 			case 8:
-				return FSlateColor(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f)); // Gray
+				return FSlateColor(FLinearColor::Red);
 			default:
 				return FSlateColor::UseForeground();
 		}
 	}
 
 	return FSlateColor::UseForeground();
+}
+
+FSlateColor SMinesweeperWidget::GetTileButtonBackgroundColor(const int32 X, const int32 Y) const
+{
+	if (!IsValidCoordinate(X, Y))
+	{
+		MS_WARNING("Invalid tile coordinate at [%d, %d]", X, Y);
+		return FSlateColor::UseForeground();
+	}
+
+	const FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
+	if (Tile.bIsBomb && Tile.bIsRevealed)
+	{
+		return FSlateColor(FLinearColor::Red);
+	}
+	if (Tile.bIsRevealed)
+	{
+		return FSlateColor(FLinearColor(0.3f, 0.3f, 0.3f, 1.0f)); // Dark Gray
+	}
+	return FSlateColor::UseForeground();
+}
+
+bool SMinesweeperWidget::IsTileButtonInteractable(const int32 X, const int32 Y) const
+{
+	// Only allow clicks when game is active
+	if (!bGameActive)
+		return false;
+
+	// Don't allow clicking already revealed tiles
+	if (IsValidCoordinate(X, Y))
+	{
+		const FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
+		return !Tile.bIsRevealed;
+	}
+	return false;
 }
 
 FReply SMinesweeperWidget::OnGenerateNewGameClicked()
@@ -289,6 +325,35 @@ void SMinesweeperWidget::ResetGame()
 {
 	bGameActive = false;
 	bGameWon = false;
+}
+
+void SMinesweeperWidget::GameOver()
+{
+	bGameActive = false;
+	bGameWon = false;
+
+	RevealAllBombs();
+
+	if (GameStatusTextUI.IsValid())
+	{
+		GameStatusTextUI->SetText(FText::FromString(TEXT("Game Over! You hit a mine.")));
+	}
+}
+
+void SMinesweeperWidget::CheckWinCondition()
+{
+	const int32 TotalNonBombTiles = GridWidth * GridHeight - BombCount;
+	if (RevealedTiles >= TotalNonBombTiles)
+	{
+		bGameActive = false;
+		bGameWon = true;
+
+		RevealAllBombs();
+		if (GameStatusTextUI.IsValid())
+		{
+			GameStatusTextUI->SetText(FText::FromString(TEXT("Congratulations! You won!")));
+		}
+	}
 }
 
 void SMinesweeperWidget::GenerateBoardTiles()
@@ -396,13 +461,89 @@ void SMinesweeperWidget::CalculateAdjacentBombs()
 	}
 }
 
+void SMinesweeperWidget::RevealAllBombs()
+{
+	// Reveal all bombs
+	for (int32 i = 0; i < GameBoardTiles.Num(); ++i)
+	{
+		if (GameBoardTiles[i].bIsBomb)
+		{
+			GameBoardTiles[i].bIsRevealed = true;
+			GameBoardTiles[i].State = EMinesweeperTileState::Bomb;
+		}
+	}
+	//
+	// // Update all tile buttons
+	// for (auto& ButtonPair : TileButtons)
+	// {
+	// 	if (ButtonPair.Value.IsValid())
+	// 	{
+	// 		ButtonPair.Value->Invalidate(EInvalidateWidget::Layout);
+	// 	}
+	// }
+}
+
 void SMinesweeperWidget::RevealTile(const int32 X, const int32 Y)
 {
 	if (!bGameActive || !IsValidCoordinate(X, Y))
+	{
+		MS_WARNING("Cannot reveal tile at: [%d - %d] or the game is not active!", X, Y);
 		return;
+	}
 
 	FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
-	// TODO
+	if (Tile.bIsRevealed)
+		return;
+
+	Tile.bIsRevealed = true;
+	RevealedTiles++;
+
+	if (Tile.bIsBomb)
+	{
+		Tile.State = EMinesweeperTileState::Bomb;
+		GameOver();
+		return;
+	}
+
+	Tile.State = EMinesweeperTileState::Revealed;
+
+	// Auto-reveal adjacent tiles if this tile has no adjacent bombs
+	if (Tile.AdjacentBombs == 0)
+	{
+		RevealAdjacentTiles(X, Y);
+	}
+
+	// Update the button appearance
+	// if (const TSharedPtr<SButton>* ButtonPtr = TileButtons.Find(GetTileIndex(X, Y)))
+	// {
+	// 	if (const TSharedPtr<SButton> Button = *ButtonPtr)
+	// 	{
+	// 		// Force refresh by invalidating
+	// 		Button->Invalidate(EInvalidateWidget::Layout);
+	// 	}
+	// }
+
+	CheckWinCondition();
+}
+
+void SMinesweeperWidget::RevealAdjacentTiles(const int32 X, const int32 Y)
+{
+	for (int32 DY = -1; DY <= 1; ++DY)
+	{
+		for (int32 DX = -1; DX <= 1; ++DX)
+		{
+			if (DX == 0 && DY == 0)
+				continue;
+
+			const int32 CheckX = X + DX;
+			const int32 CheckY = Y + DY;
+
+			if (IsValidCoordinate(CheckX, CheckY))
+			{
+				RevealTile(CheckX, CheckY);
+			}
+		}
+	}
 }
 
 bool SMinesweeperWidget::IsValidCoordinate(const int32 X, const int32 Y) const
