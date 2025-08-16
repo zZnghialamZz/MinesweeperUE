@@ -37,6 +37,17 @@ FReply SMinesweeperTileButton::OnMouseButtonDown(const FGeometry& MyGeometry, co
 	return SButton::OnMouseButtonDown(MyGeometry, MouseEvent);
 }
 
+FReply SMinesweeperTileButton::OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	// Support handling Mouse Right Click, this is used for Minesweeper right click game play feature.
+	if (MouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
+	{
+		// Clear button state
+		Release();
+	}
+	return SButton::OnMouseButtonUp(MyGeometry, MouseEvent);
+}
+
 FReply SMinesweeperTileButton::ExecuteOnRightClick() const
 {
 	PlayClickedSound();

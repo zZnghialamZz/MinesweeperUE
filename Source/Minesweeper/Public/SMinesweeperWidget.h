@@ -33,6 +33,7 @@ private:
 	FSlateColor GetTileButtonTextColor(const int32 X, const int32 Y) const;
 	FSlateColor GetTileButtonBackgroundColor(const int32 X, const int32 Y) const;
 	bool IsTileButtonInteractable(const int32 X, const int32 Y) const;
+	void ShowEndGameDialog() const;
 	void UpdateFlagCountDisplay();
 
 	// UI callbacks
@@ -46,7 +47,7 @@ private:
 	// Game logic
 	void InitializeGame();
 	void ResetGame();
-	void GameOver();
+	void EndGame(const bool bWon);
 	void CheckWinCondition();
 	void GenerateBoardTiles();
 	void PlaceBombsRandomly();

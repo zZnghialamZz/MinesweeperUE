@@ -37,8 +37,8 @@ void SMinesweeperWidget::Construct(const FArguments& InArgs)
 			.VAlign(VAlign_Top)
 			[
 				SNew(SBox)
-				.MinDesiredWidth(800)
-				.MinDesiredHeight(800)
+				.MinDesiredWidth(1024)
+				.MinDesiredHeight(1024)
 				[
 					CreateGameBoard()
 				]
@@ -316,6 +316,16 @@ void SMinesweeperWidget::UpdateFlagCountDisplay()
 	}
 }
 
+void SMinesweeperWidget::ShowEndGameDialog() const
+{
+	FString MessageText = bGameWon ? TEXT("Congratulations! You won!") : TEXT("Game Over! You hit a mine.");
+	MessageText += TEXT("\nClick on the Generated new grid button to generate a new game!");
+
+	const FString DialogTitle = TEXT("Minesweeper Notice");
+	const EAppMsgCategory MessageCategory = bGameWon ? EAppMsgCategory::Success : EAppMsgCategory::Warning;
+	FMessageDialog::Open(MessageCategory, EAppMsgType::Ok, FText::FromString(MessageText), FText::FromString(DialogTitle));
+}
+
 FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 {
 	// Update these value at the time user press generate new grid, the ui value can be changed afterward.
@@ -324,7 +334,7 @@ FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 	GridWidth = GridWidthUIValue;
 	GridHeight = GridHeightUIValue;
 	BombCount = FMath::Min(BombCountUIValue, GridWidthUIValue * GridHeightUIValue - 1); // Bomb shouldn't go all over board
-	
+
 	InitializeGame();
 	return FReply::Handled();
 }
@@ -333,6 +343,7 @@ FReply SMinesweeperWidget::OnTileClicked(const int32 X, const int32 Y)
 {
 	MS_DISPLAY("Try revealing tile [%d - %d]", X, Y);
 	RevealTile(X, Y);
+	CheckWinCondition();
 	return FReply::Handled();
 }
 
@@ -340,6 +351,7 @@ FReply SMinesweeperWidget::OnTileRightClicked(const int32 X, const int32 Y)
 {
 	MS_DISPLAY("Toggle flag in tile [%d - %d]", X, Y);
 	ToggleFlag(X, Y);
+	CheckWinCondition();
 	return FReply::Handled();
 }
 
@@ -371,21 +383,32 @@ void SMinesweeperWidget::ResetGame()
 	bGameWon = false;
 }
 
-void SMinesweeperWidget::GameOver()
+void SMinesweeperWidget::EndGame(const bool bWon)
 {
 	bGameActive = false;
-	bGameWon = false;
+	bGameWon = bWon;
 
-	RevealAllBombsAndFlag(false);
+	RevealAllBombsAndFlag(bWon);
+	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float) -> bool {
+		// Delay show dialog to allow Slate UI update its visual
+		ShowEndGameDialog();
+		return false; // Return false to remove the ticker
+	}), 0.05f);
 
 	if (GameStatusTextUI.IsValid())
 	{
-		GameStatusTextUI->SetText(FText::FromString(TEXT("Game Over! You hit a mine.")));
+		const FString StatusText = bWon ? TEXT("Congratulations! You won!") : TEXT("Game Over! You hit a mine.");
+		GameStatusTextUI->SetText(FText::FromString(StatusText));
 	}
 }
 
 void SMinesweeperWidget::CheckWinCondition()
 {
+	if (!bGameActive)
+	{
+		return;
+	}
+
 	const int32 TotalNonBombTiles = GridWidth * GridHeight - BombCount;
 	const bool bAllNonBombTilesRevealed = RevealedTiles >= TotalNonBombTiles;
 
@@ -410,15 +433,7 @@ void SMinesweeperWidget::CheckWinCondition()
 
 	if (bAllNonBombTilesRevealed || bPerfectlyFlagged)
 	{
-		bGameActive = false;
-		bGameWon = true;
-
-		// Show bomb as flag as we won the game
-		RevealAllBombsAndFlag(true);
-		if (GameStatusTextUI.IsValid())
-		{
-			GameStatusTextUI->SetText(FText::FromString(TEXT("Congratulations! You won!")));
-		}
+		EndGame(true);
 	}
 }
 
@@ -558,7 +573,7 @@ void SMinesweeperWidget::RevealTile(const int32 X, const int32 Y)
 
 	if (Tile.bIsBomb)
 	{
-		GameOver();
+		EndGame(false);
 		return;
 	}
 
@@ -567,8 +582,6 @@ void SMinesweeperWidget::RevealTile(const int32 X, const int32 Y)
 	{
 		RevealAdjacentTiles(X, Y);
 	}
-
-	CheckWinCondition();
 }
 
 void SMinesweeperWidget::RevealAdjacentTiles(const int32 X, const int32 Y)
@@ -619,7 +632,6 @@ void SMinesweeperWidget::ToggleFlag(const int32 X, const int32 Y)
 	}
 
 	UpdateFlagCountDisplay();
-	CheckWinCondition();
 }
 
 bool SMinesweeperWidget::IsValidCoordinate(const int32 X, const int32 Y) const
