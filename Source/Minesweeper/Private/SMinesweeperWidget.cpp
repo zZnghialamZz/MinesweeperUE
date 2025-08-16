@@ -323,7 +323,8 @@ FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 	// happens when the player is still playing on current board but decide to update the UI value.
 	GridWidth = GridWidthUIValue;
 	GridHeight = GridHeightUIValue;
-	BombCount = BombCountUIValue;
+	BombCount = FMath::Min(BombCountUIValue, GridWidthUIValue * GridHeightUIValue - 1); // Bomb shouldn't go all over board
+	
 	InitializeGame();
 	return FReply::Handled();
 }
