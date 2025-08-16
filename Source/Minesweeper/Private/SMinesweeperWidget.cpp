@@ -37,8 +37,8 @@ void SMinesweeperWidget::Construct(const FArguments& InArgs)
 			.VAlign(VAlign_Top)
 			[
 				SNew(SBox)
-				.MaxDesiredWidth(800)
-				.MinDesiredHeight(600)
+				.MinDesiredWidth(800)
+				.MinDesiredHeight(800)
 				[
 					CreateGameBoard()
 				]
@@ -120,7 +120,7 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateControlPanel()
 				.MinWidth(100)
 				[
 					SAssignNew(BombCountSpinBoxUI, SSpinBox<int32>)
-					.MinValue(0)
+					.MinValue(BombCountMin)
 					.MaxValue(BombCountMax)
 					.Value(BombCountUIValue)
 					.OnValueChanged(this, &SMinesweeperWidget::OnBombCountUIValueChanged)
@@ -171,12 +171,13 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const in
 		.OnRightClicked(this, &SMinesweeperWidget::OnTileRightClicked, X, Y)
 		[
 			SNew(SBox)
-			.WidthOverride(25)
-			.HeightOverride(25)
+			.WidthOverride(20)
+			.HeightOverride(20)
 			[
 				SNew(STextBlock)
 				.Text(this, &SMinesweeperWidget::GetTileButtonText, X, Y)
 				.ColorAndOpacity(this, &SMinesweeperWidget::GetTileButtonTextColor, X, Y)
+				.Font(FAppStyle::Get().GetFontStyle("BoldFont"))
 				.Justification(ETextJustify::Center)
 			]
 		];
@@ -196,11 +197,16 @@ FText SMinesweeperWidget::GetTileButtonText(const int32 X, const int32 Y) const
 	}
 
 	const FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
+
+	// Show flag if tile is flagged
+	if (Tile.bIsFlagged)
+	{
+		return FText::FromString(TEXT("🚩"));
+	}
 	if (!Tile.bIsRevealed)
 	{
 		return FText::FromString(TEXT(""));
 	}
-
 	if (Tile.bIsBomb)
 	{
 		return FText::FromString(TEXT("💣"));
@@ -266,7 +272,11 @@ FSlateColor SMinesweeperWidget::GetTileButtonBackgroundColor(const int32 X, cons
 	}
 
 	const FMinesweeperTile& Tile = GameBoardTiles[GetTileIndex(X, Y)];
-	if (Tile.bIsBomb && Tile.bIsRevealed)
+	if (Tile.bIsBomb && Tile.bIsRevealed && !Tile.bIsFlagged)
+	{
+		return FSlateColor(FLinearColor::Red);
+	}
+	if (Tile.bIsFlagged && Tile.bIsRevealed && !Tile.bIsBomb)
 	{
 		return FSlateColor(FLinearColor::Red);
 	}
@@ -292,7 +302,19 @@ bool SMinesweeperWidget::IsTileButtonInteractable(const int32 X, const int32 Y) 
 	return false;
 }
 
-void SMinesweeperWidget::UpdateFlagCountDisplay() {}
+void SMinesweeperWidget::UpdateFlagCountDisplay()
+{
+	if (FlagCountTextUI.IsValid())
+	{
+		const int32 RemainingFlags = BombCount - FlaggedTiles;
+		FString FlagText = FString::Printf(TEXT("Flags: %d/%d"), FlaggedTiles, BombCount);
+		if (RemainingFlags >= 0)
+		{
+			FlagText += FString::Printf(TEXT(" (Remaining: %d)"), RemainingFlags);
+		}
+		FlagCountTextUI->SetText(FText::FromString(FlagText));
+	}
+}
 
 FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 {
@@ -308,13 +330,15 @@ FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 
 FReply SMinesweeperWidget::OnTileClicked(const int32 X, const int32 Y)
 {
+	MS_DISPLAY("Try revealing tile [%d - %d]", X, Y);
 	RevealTile(X, Y);
 	return FReply::Handled();
 }
 
 FReply SMinesweeperWidget::OnTileRightClicked(const int32 X, const int32 Y)
 {
-	MS_DISPLAY("Place flag in tile [%d - %d]", X, Y);
+	MS_DISPLAY("Toggle flag in tile [%d - %d]", X, Y);
+	ToggleFlag(X, Y);
 	return FReply::Handled();
 }
 
@@ -330,13 +354,14 @@ void SMinesweeperWidget::OnHeightUIValueChanged(const int32 NewValue)
 
 void SMinesweeperWidget::OnBombCountUIValueChanged(const int32 NewValue)
 {
-	BombCountUIValue = FMath::Clamp(NewValue, 0, BombCountMax);
+	BombCountUIValue = FMath::Clamp(NewValue, BombCountMin, BombCountMax);
 }
 
 void SMinesweeperWidget::InitializeGame()
 {
 	ResetGame();
 	GenerateBoardTiles();
+	UpdateFlagCountDisplay();
 }
 
 void SMinesweeperWidget::ResetGame()
@@ -350,7 +375,7 @@ void SMinesweeperWidget::GameOver()
 	bGameActive = false;
 	bGameWon = false;
 
-	RevealAllBombs();
+	RevealAllBombsAndFlag(false);
 
 	if (GameStatusTextUI.IsValid())
 	{
@@ -375,7 +400,9 @@ void SMinesweeperWidget::CheckWinCondition()
 		// Check for incorrectly flagged tiles (flagged but not a bomb)
 		else if (!Tile.bIsBomb && Tile.bIsFlagged)
 		{
+			// If place wrong flag, the user still not win yet
 			bPlaceWrongFlag = true;
+			break;
 		}
 	}
 	const bool bPerfectlyFlagged = CorrectlyFlaggedBombs == BombCount && !bPlaceWrongFlag;
@@ -385,7 +412,8 @@ void SMinesweeperWidget::CheckWinCondition()
 		bGameActive = false;
 		bGameWon = true;
 
-		RevealAllBombs();
+		// Show bomb as flag as we won the game
+		RevealAllBombsAndFlag(true);
 		if (GameStatusTextUI.IsValid())
 		{
 			GameStatusTextUI->SetText(FText::FromString(TEXT("Congratulations! You won!")));
@@ -499,13 +527,15 @@ void SMinesweeperWidget::CalculateAdjacentBombs()
 	}
 }
 
-void SMinesweeperWidget::RevealAllBombs()
+void SMinesweeperWidget::RevealAllBombsAndFlag(const bool bRevealBombAsFlag)
 {
-	// Reveal all bombs
+	// Reveal all bombs and flagged tiles
 	for (int32 i = 0; i < GameBoardTiles.Num(); ++i)
 	{
-		if (GameBoardTiles[i].bIsBomb)
+		if (GameBoardTiles[i].bIsBomb || GameBoardTiles[i].bIsFlagged)
 		{
+			if (bRevealBombAsFlag)
+				GameBoardTiles[i].bIsFlagged = true;
 			GameBoardTiles[i].bIsRevealed = true;
 		}
 	}
@@ -515,7 +545,6 @@ void SMinesweeperWidget::RevealTile(const int32 X, const int32 Y)
 {
 	if (!bGameActive || !IsValidCoordinate(X, Y))
 	{
-		MS_WARNING("Cannot reveal tile at: [%d - %d] or the game is not active!", X, Y);
 		return;
 	}
 

@@ -51,7 +51,7 @@ private:
 	void GenerateBoardTiles();
 	void PlaceBombsRandomly();
 	void CalculateAdjacentBombs();
-	void RevealAllBombs();
+	void RevealAllBombsAndFlag(const bool bRevealBombAsFlag);
 	void RevealTile(const int32 X, const int32 Y);
 	void RevealAdjacentTiles(const int32 X, const int32 Y);
 	void ToggleFlag(const int32 X, const int32 Y);
@@ -61,7 +61,8 @@ private:
 private:
 	static constexpr int GameGridMin = 5;
 	static constexpr int GameGridMax = 50;
-	static constexpr int BombCountMax = 100;
+	static constexpr int BombCountMin = 1;
+	static constexpr int BombCountMax = 500;
 	
 	// Game states
 	TArray<FMinesweeperTile> GameBoardTiles;

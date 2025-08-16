@@ -26,7 +26,7 @@ void SMinesweeperTileButton::Construct(const FArguments& InArgs)
 
 FReply SMinesweeperTileButton::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	// Handle Mouse Right Click
+	// Support handling Mouse Right Click, this is used for Minesweeper right click game play feature.
 	if (IsEnabled() && MouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
 	{
 		Press();
