@@ -3,8 +3,9 @@
 #include "SMinesweeperWidget.h"
 
 #include "MinesweeperLog.h"
+#include "Widgets/SMinesweeperTileButton.h"
+
 #include "SlateOptMacros.h"
-#include "SMinesweeperTileButton.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION

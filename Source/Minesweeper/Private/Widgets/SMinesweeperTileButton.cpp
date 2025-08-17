@@ -1,7 +1,7 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 
-#include "SMinesweeperTileButton.h"
+#include "Widgets/SMinesweeperTileButton.h"
 
 #include "SlateOptMacros.h"
 
@@ -9,18 +9,22 @@ BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
 void SMinesweeperTileButton::Construct(const FArguments& InArgs)
 {
+	// Store the right-click delegate
 	OnRightClicked = InArgs._OnRightClicked;
-	
+
+	// Configure button arguments with provided settings
 	SButton::FArguments ButtonArgs;
 	ButtonArgs.OnClicked(InArgs._OnClicked);
-	ButtonArgs.ClickMethod(EButtonClickMethod::MouseDown)
+	ButtonArgs.ClickMethod(InArgs._ClickMethod);
+	ButtonArgs.ButtonColorAndOpacity(InArgs._ButtonColorAndOpacity);
+	ButtonArgs.HAlign(InArgs._HAlign);
+	ButtonArgs.VAlign(InArgs._VAlign);
+	ButtonArgs.Content()
 	[
 		InArgs._Content.Widget
 	];
-	ButtonArgs.ButtonColorAndOpacity(InArgs._ButtonColorAndOpacity);
-	ButtonArgs.HAlign(HAlign_Center);
-	ButtonArgs.VAlign(VAlign_Center);
 
+	// Construct the base button with configured arguments
 	SButton::Construct(ButtonArgs);
 }
 
@@ -39,11 +43,13 @@ FReply SMinesweeperTileButton::OnMouseButtonDown(const FGeometry& MyGeometry, co
 
 FReply SMinesweeperTileButton::OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	// Support handling Mouse Right Click, this is used for Minesweeper right click game play feature.
+	// Handle right mouse button release
 	if (MouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
 	{
-		// Clear button state
+		// Clear the pressed button state for right clicks
 		Release();
+		// Don't mark as handled here - let the below event handle the logic
+		return FReply::Unhandled();
 	}
 	return SButton::OnMouseButtonUp(MyGeometry, MouseEvent);
 }
@@ -51,10 +57,10 @@ FReply SMinesweeperTileButton::OnMouseButtonUp(const FGeometry& MyGeometry, cons
 FReply SMinesweeperTileButton::ExecuteOnRightClick() const
 {
 	PlayClickedSound();
+
 	if (OnRightClicked.IsBound())
 	{
-		FReply Reply = OnRightClicked.Execute();
-		return Reply;
+		return OnRightClicked.Execute();
 	}
 	return FReply::Unhandled();
 }
