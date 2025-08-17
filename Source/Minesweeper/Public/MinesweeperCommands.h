@@ -14,5 +14,6 @@ public:
 	virtual void RegisterCommands() override;
 
 public:
+	/** Command to open the Minesweeper game window */
 	TSharedPtr<FUICommandInfo> OpenMineSweeperWindow;
 };

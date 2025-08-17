@@ -3,6 +3,7 @@
 #include "Minesweeper.h"
 #include "MinesweeperStyle.h"
 #include "MinesweeperCommands.h"
+#include "MinesweeperLog.h"
 #include "SMinesweeperWidget.h"
 
 #include "Misc/MessageDialog.h"
@@ -14,35 +15,35 @@ static const FName MinesweeperTabName("Minesweeper");
 
 void FMinesweeperModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+	MS_DISPLAY("Starting Minesweeper Module!");
 
+	// Initialize style system
 	FMinesweeperStyle::Initialize();
 	FMinesweeperStyle::ReloadTextures();
 
+	// Register UI Commands
 	FMinesweeperCommands::Register();
 
+	// Create and setup command list
 	PluginCommands = MakeShareable(new FUICommandList);
 	PluginCommands->MapAction(
 		FMinesweeperCommands::Get().OpenMineSweeperWindow,
 		FExecuteAction::CreateRaw(this, &FMinesweeperModule::OnMineSweeperButtonClicked),
 		FCanExecuteAction());
 
+	// Register UIs
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMinesweeperModule::RegisterToolBarMenus));
-
-	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MinesweeperTabName, FOnSpawnTab::CreateRaw(this, &FMinesweeperModule::OnSpawnMinesweeperTab))
-	                        .SetDisplayName(NSLOCTEXT("MinesweeperEditor", "MinesweeperTabTitle", "Minesweeper"))
-	                        .SetMenuType(ETabSpawnerMenuType::Hidden);
+	RegisterTabSpawner();
 }
 
 void FMinesweeperModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
-
-	UToolMenus::UnRegisterStartupCallback(this);
-	UToolMenus::UnregisterOwner(this);
+	UnregisterToolBarMenus();
+	UnregisterTabSpawner();
 	FMinesweeperStyle::Shutdown();
 	FMinesweeperCommands::Unregister();
+
+	MS_DISPLAY("Minesweeper module shutdown complete");
 }
 
 void FMinesweeperModule::OnMineSweeperButtonClicked()
@@ -55,6 +56,7 @@ void FMinesweeperModule::RegisterToolBarMenus()
 	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
 	FToolMenuOwnerScoped OwnerScoped(this);
 	{
+		// Add to main menu
 		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
 		{
 			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
@@ -63,6 +65,7 @@ void FMinesweeperModule::RegisterToolBarMenus()
 	}
 
 	{
+		// Add to Toolbar menu
 		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar");
 		{
 			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("PluginTools");
@@ -72,6 +75,24 @@ void FMinesweeperModule::RegisterToolBarMenus()
 			}
 		}
 	}
+}
+
+void FMinesweeperModule::UnregisterToolBarMenus()
+{
+	UToolMenus::UnRegisterStartupCallback(this);
+	UToolMenus::UnregisterOwner(this);
+}
+
+void FMinesweeperModule::RegisterTabSpawner()
+{
+	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MinesweeperTabName, FOnSpawnTab::CreateRaw(this, &FMinesweeperModule::OnSpawnMinesweeperTab))
+	                        .SetDisplayName(NSLOCTEXT("MinesweeperEditor", "MinesweeperTabTitle", "Minesweeper"))
+	                        .SetMenuType(ETabSpawnerMenuType::Hidden);
+}
+
+void FMinesweeperModule::UnregisterTabSpawner()
+{
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(MinesweeperTabName);
 }
 
 TSharedRef<SDockTab> FMinesweeperModule::OnSpawnMinesweeperTab(const FSpawnTabArgs& Args)

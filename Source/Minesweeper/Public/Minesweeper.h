@@ -14,10 +14,16 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	void OnMineSweeperButtonClicked();
-
 private:
+	/** UI Command Handler **/
+	void OnMineSweeperButtonClicked();
+	
 	void RegisterToolBarMenus();
+	void UnregisterToolBarMenus();
+	void RegisterTabSpawner();
+	void UnregisterTabSpawner();
+
+	/** Tab Management **/
 	TSharedRef<class SDockTab> OnSpawnMinesweeperTab(const FSpawnTabArgs& Args);
 
 private:
