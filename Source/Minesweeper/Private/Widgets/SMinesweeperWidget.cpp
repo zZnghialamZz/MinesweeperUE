@@ -4,7 +4,6 @@
 
 #include "MinesweeperLog.h"
 #include "Widgets/SMinesweeperTileButton.h"
-#include "Widgets/MinesweeperWidgetHelper.h"
 
 #include "SlateOptMacros.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
@@ -14,7 +13,7 @@ BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void SMinesweeperWidget::Construct(const FArguments& InArgs)
 {
 	// Initialize game logic
-	GameCore = MakeUnique<FMinesweeperCore>();
+	GameCore = MakeShared<FMinesweeperCore>();
 
 	// Initialize UI settings
 	PendingGameSettings = FMinesweeperGameSettings(10, 10, 10);
@@ -193,7 +192,7 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateGameInfoPanel()
 			.HAlign(HAlign_Left)
 			[
 				SAssignNew(FlagCountTextUI, STextBlock)
-				.Text(FMinesweeperWidgetHelper::GetFlagCountText(0, 10))
+				.Text(GetFlagCountText(0, 10))
 				.Justification(ETextJustify::Left)
 			]
 
@@ -202,7 +201,7 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateGameInfoPanel()
 			.HAlign(HAlign_Right)
 			[
 				SAssignNew(GameStatusTextUI, STextBlock)
-				.Text(FMinesweeperWidgetHelper::GetGameStatusText(EMinesweeperGameState::NotStarted))
+				.Text(GetGameStatusText(EMinesweeperGameState::NotStarted))
 				.Justification(ETextJustify::Right)
 			];
 }
@@ -214,23 +213,19 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateGameBoard()
 
 TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const int32 Y)
 {
+	if (!GameCore.IsValid())
+	{
+		MS_FATAL("GameCore is not valid when creating tile button, please re-check !");
+		return SNew(SButton);
+	}
+
 	TSharedRef<SButton> NewTileButton = SNew(SMinesweeperTileButton)
 		.IsEnabled(this, &SMinesweeperWidget::IsTileButtonInteractable, X, Y)
-		.ButtonColorAndOpacity(this, &SMinesweeperWidget::GetTileButtonBackgroundColor, X, Y)
-		.OnClicked(this, &SMinesweeperWidget::OnTileClicked, X, Y)
-		.OnRightClicked(this, &SMinesweeperWidget::OnTileRightClicked, X, Y)
-		[
-			SNew(SBox)
-			.WidthOverride(20)
-			.HeightOverride(20)
-			[
-				SNew(STextBlock)
-				.Text(this, &SMinesweeperWidget::GetTileButtonText, X, Y)
-				.ColorAndOpacity(this, &SMinesweeperWidget::GetTileButtonTextColor, X, Y)
-				.Font(FAppStyle::Get().GetFontStyle("BoldFont"))
-				.Justification(ETextJustify::Center)
-			]
-		];
+		.TileX(X)
+		.TileY(Y)
+		.GameCore(GameCore)
+		.OnTileRevealed(this, &SMinesweeperWidget::OnTileRevealed)
+		.OnTileFlagged(this, &SMinesweeperWidget::OnTileFlagged);
 
 	return NewTileButton;
 }
@@ -276,7 +271,7 @@ void SMinesweeperWidget::UpdateFlagCountDisplay() const
 	{
 		const int32 FlaggedCount = GameCore->GetFlaggedTileCount();
 		const int32 TotalBombs = GameCore->GetGameSettings().BombCount;
-		FlagCountTextUI->SetText(FMinesweeperWidgetHelper::GetFlagCountText(FlaggedCount, TotalBombs));
+		FlagCountTextUI->SetText(GetFlagCountText(FlaggedCount, TotalBombs));
 	}
 }
 
@@ -285,7 +280,7 @@ void SMinesweeperWidget::UpdateGameStatusDisplay() const
 	if (GameStatusTextUI.IsValid() && GameCore.IsValid())
 	{
 		const EMinesweeperGameState CurrentState = GameCore->GetGameState();
-		GameStatusTextUI->SetText(FMinesweeperWidgetHelper::GetGameStatusText(CurrentState));
+		GameStatusTextUI->SetText(GetGameStatusText(CurrentState));
 	}
 }
 
@@ -299,11 +294,11 @@ FReply SMinesweeperWidget::OnGenerateNewGameClicked()
 	return FReply::Handled();
 }
 
-FReply SMinesweeperWidget::OnTileClicked(const int32 X, const int32 Y)
+void SMinesweeperWidget::OnTileRevealed(const int32 X, const int32 Y)
 {
 	MS_DISPLAY("Try revealing tile [%d - %d]", X, Y);
 	if (!GameCore.IsValid())
-		return FReply::Unhandled();
+		return;
 
 	const bool bTileRevealed = GameCore->RevealTile(X, Y);
 	if (bTileRevealed)
@@ -311,22 +306,18 @@ FReply SMinesweeperWidget::OnTileClicked(const int32 X, const int32 Y)
 		UpdateGameInfoDisplay();
 		HandleGameStateChange(GameCore->GetGameState());
 	}
-
-	return FReply::Handled();
 }
 
-FReply SMinesweeperWidget::OnTileRightClicked(const int32 X, const int32 Y)
+void SMinesweeperWidget::OnTileFlagged(const int32 X, const int32 Y)
 {
 	if (!GameCore.IsValid())
-		return FReply::Unhandled();
+		return;
 
 	MS_DISPLAY("Toggling flag on tile [%d, %d]", X, Y);
 
 	GameCore->ToggleFlag(X, Y);
 	UpdateGameInfoDisplay();
 	HandleGameStateChange(GameCore->GetGameState());
-
-	return FReply::Handled();
 }
 
 void SMinesweeperWidget::OnWidthUIValueChanged(const int32 NewValue)
@@ -349,49 +340,38 @@ void SMinesweeperWidget::OnBombCountUIValueChanged(const int32 NewValue)
 
 // ==== UI Attribute Getters (for dynamic UI updates)
 
-FText SMinesweeperWidget::GetTileButtonText(const int32 X, const int32 Y) const
+FText SMinesweeperWidget::GetGameStatusText(const EMinesweeperGameState GameState) const
 {
-	if (!GameCore.IsValid())
-		return FText::GetEmpty();
-
-	const FMinesweeperTile* Tile = GameCore->GetTile(X, Y);
-	if (!Tile)
+	switch (GameState)
 	{
-		MS_WARNING("Invalid tile coordinate at [%d, %d]", X, Y);
-		return FText::GetEmpty();
-	}
+		case EMinesweeperGameState::NotStarted:
+			return FText::FromString(TEXT("Ready to play! Click the button above to start!"));
 
-	return FMinesweeperWidgetHelper::GetTileDisplayText(*Tile);
+		case EMinesweeperGameState::Active:
+			return FText::FromString(TEXT("Game Started! Left-click to reveal, right-click to flag."));
+
+		case EMinesweeperGameState::Won:
+			return FText::FromString(TEXT("Congratulations! You won!"));
+
+		case EMinesweeperGameState::Lost:
+			return FText::FromString(TEXT("Game Over! You hit a mine."));
+
+		default:
+			return FText::GetEmpty();
+	}
 }
 
-FSlateColor SMinesweeperWidget::GetTileButtonTextColor(const int32 X, const int32 Y) const
+FText SMinesweeperWidget::GetFlagCountText(const int32 FlaggedCount, const int32 TotalBombs) const
 {
-	if (!GameCore.IsValid())
-		return FSlateColor::UseForeground();
+	const int32 RemainingFlags = TotalBombs - FlaggedCount;
+	FString FlagText = FString::Printf(TEXT("Flags: %d/%d"), FlaggedCount, TotalBombs);
 
-	const FMinesweeperTile* Tile = GameCore->GetTile(X, Y);
-	if (!Tile)
+	if (RemainingFlags >= 0)
 	{
-		MS_WARNING("Invalid tile coordinate at [%d, %d]", X, Y);
-		return FSlateColor::UseForeground();
+		FlagText += FString::Printf(TEXT(" (Remaining: %d)"), RemainingFlags);
 	}
 
-	return FMinesweeperWidgetHelper::GetTileTextColor(*Tile);
-}
-
-FSlateColor SMinesweeperWidget::GetTileButtonBackgroundColor(const int32 X, const int32 Y) const
-{
-	if (!GameCore.IsValid())
-		return FSlateColor::UseForeground();
-
-	const FMinesweeperTile* Tile = GameCore->GetTile(X, Y);
-	if (!Tile)
-	{
-		MS_WARNING("Invalid tile coordinate at [%d, %d]", X, Y);
-		return FSlateColor::UseForeground();
-	}
-
-	return FMinesweeperWidgetHelper::GetTileBackgroundColor(*Tile);
+	return FText::FromString(FlagText);
 }
 
 bool SMinesweeperWidget::IsTileButtonInteractable(const int32 X, const int32 Y) const
@@ -424,7 +404,7 @@ void SMinesweeperWidget::InitializeNewGame()
 	UpdateGameInfoDisplay();
 }
 
-void SMinesweeperWidget::HandleGameStateChange(EMinesweeperGameState NewState)
+void SMinesweeperWidget::HandleGameStateChange(const EMinesweeperGameState NewState)
 {
 	switch (NewState)
 	{

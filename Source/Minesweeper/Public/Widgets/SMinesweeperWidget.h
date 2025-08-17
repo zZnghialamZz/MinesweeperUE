@@ -35,26 +35,25 @@ private:
 
 	// UI callbacks
 	FReply OnGenerateNewGameClicked();
-	FReply OnTileClicked(const int32 X, const int32 Y);
-	FReply OnTileRightClicked(const int32 X, const int32 Y);
+	void OnTileRevealed(const int32 X, const int32 Y);
+	void OnTileFlagged(const int32 X, const int32 Y);
 	void OnWidthUIValueChanged(const int32 NewValue);
 	void OnHeightUIValueChanged(const int32 NewValue);
 	void OnBombCountUIValueChanged(const int32 NewValue);
 
 	// UI Attribute Getters (for dynamic UI updates)
-	FText GetTileButtonText(const int32 X, const int32 Y) const;
-	FSlateColor GetTileButtonTextColor(const int32 X, const int32 Y) const;
-	FSlateColor GetTileButtonBackgroundColor(const int32 X, const int32 Y) const;
+	FText GetGameStatusText(const EMinesweeperGameState GameState) const;
+	FText GetFlagCountText(const int32 FlaggedCount, const int32 TotalBombs) const;
 	bool IsTileButtonInteractable(const int32 X, const int32 Y) const;
 
 	// Game flow
 	void InitializeNewGame();
-	void HandleGameStateChange(EMinesweeperGameState NewState);
+	void HandleGameStateChange(const EMinesweeperGameState NewState);
 	void ShowEndGameDialog() const;
 
 private:
 	// Core Game Logic
-	TUniquePtr<FMinesweeperCore> GameCore;
+	TSharedPtr<FMinesweeperCore> GameCore;
 
 	// UI State
 	FMinesweeperGameSettings PendingGameSettings;
