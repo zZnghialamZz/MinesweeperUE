@@ -162,7 +162,7 @@ FSlateColor SMinesweeperTileButton::GetTileBackgroundColor() const
 		return FSlateColor(FLinearColor(0.3f, 0.3f, 0.3f, 1.0f));
 
 	// Default button color for unrevealed tiles
-	return FSlateColor::UseForeground();
+	return FSlateColor(FLinearColor(0.7f, 0.7f, 0.7f, 1.0f));
 }
 
 FSlateColor SMinesweeperTileButton::GetTileTextColorBasedOnAdjacentBomb(const int32 AdjacentBombCount) const

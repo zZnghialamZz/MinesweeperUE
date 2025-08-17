@@ -4,9 +4,6 @@
 
 #include "Modules/ModuleManager.h"
 
-class FToolBarBuilder;
-class FMenuBuilder;
-
 class FMinesweeperModule : public IModuleInterface
 {
 public:
