@@ -9,7 +9,11 @@ class FMinesweeperCommands final : public TCommands<FMinesweeperCommands>
 {
 public:
 	FMinesweeperCommands()
-		: TCommands(TEXT("Minesweeper"), NSLOCTEXT("Contexts", "Minesweeper", "Minesweeper Plugin"), NAME_None, FMinesweeperStyle::GetStyleSetName()) {}
+		: TCommands(
+			TEXT("Minesweeper"),
+			NSLOCTEXT("Contexts", "Minesweeper", "Minesweeper Plugin"),
+			NAME_None,
+			FMinesweeperStyle::GetStyleSetName()) {}
 
 	virtual void RegisterCommands() override;
 

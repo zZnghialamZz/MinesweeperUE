@@ -29,7 +29,7 @@ private:
 
 	// UI Update Methods
 	void RefreshGameBoardUI();
-	void UpdateGameInfoDisplay();
+	void UpdateGameInfoDisplay() const;
 	void UpdateFlagCountDisplay() const;
 	void UpdateGameStatusDisplay() const;
 

@@ -4,7 +4,7 @@
 #include "MinesweeperStyle.h"
 #include "MinesweeperCommands.h"
 #include "MinesweeperLog.h"
-#include "SMinesweeperWidget.h"
+#include "Widgets/SMinesweeperWidget.h"
 
 #include "Misc/MessageDialog.h"
 #include "ToolMenus.h"

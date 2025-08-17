@@ -1,6 +1,6 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "SMinesweeperWidget.h"
+#include "Widgets/SMinesweeperWidget.h"
 
 #include "MinesweeperLog.h"
 #include "Widgets/SMinesweeperTileButton.h"
@@ -275,7 +275,7 @@ void SMinesweeperWidget::RefreshGameBoardUI()
 	}
 }
 
-void SMinesweeperWidget::UpdateGameInfoDisplay()
+void SMinesweeperWidget::UpdateGameInfoDisplay() const
 {
 	UpdateFlagCountDisplay();
 	UpdateGameStatusDisplay();
