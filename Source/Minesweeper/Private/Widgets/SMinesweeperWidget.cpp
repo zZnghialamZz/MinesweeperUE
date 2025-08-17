@@ -214,12 +214,6 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateGameBoard()
 
 TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const int32 Y)
 {
-	if (!GameCore.IsValid())
-	{
-		MS_FATAL("GameCore is not valid when creating tile button. This is fatal error! ");
-		return SNew(SButton);
-	}
-	
 	TSharedRef<SButton> NewTileButton = SNew(SMinesweeperTileButton)
 		.IsEnabled(this, &SMinesweeperWidget::IsTileButtonInteractable, X, Y)
 		.ButtonColorAndOpacity(this, &SMinesweeperWidget::GetTileButtonBackgroundColor, X, Y)
@@ -237,10 +231,6 @@ TSharedRef<SWidget> SMinesweeperWidget::CreateTileButton(const int32 X, const in
 				.Justification(ETextJustify::Center)
 			]
 		];
-	
-	// Cache the buttons for future update
-	const int32 TileIndex = GameCore->GetTileIndex(X, Y);
-	TileButtonsCache.Add(TileIndex, NewTileButton);
 
 	return NewTileButton;
 }
@@ -257,7 +247,6 @@ void SMinesweeperWidget::RefreshGameBoardUI()
 
 	// Clear existing UI
 	GameBoardGridPanelUI->ClearChildren();
-	TileButtonsCache.Empty();
 
 	const FMinesweeperGameSettings& Settings = GameCore->GetGameSettings();
 
@@ -342,21 +331,18 @@ FReply SMinesweeperWidget::OnTileRightClicked(const int32 X, const int32 Y)
 
 void SMinesweeperWidget::OnWidthUIValueChanged(const int32 NewValue)
 {
-	// TODO
 	PendingGameSettings.GridWidth = NewValue;
 	PendingGameSettings.ValidateAndClamp();
 }
 
 void SMinesweeperWidget::OnHeightUIValueChanged(const int32 NewValue)
 {
-	// TODO
 	PendingGameSettings.GridHeight = NewValue;
 	PendingGameSettings.ValidateAndClamp();
 }
 
 void SMinesweeperWidget::OnBombCountUIValueChanged(const int32 NewValue)
 {
-	// TODO
 	PendingGameSettings.BombCount = NewValue;
 	PendingGameSettings.ValidateAndClamp();
 }

@@ -66,7 +66,4 @@ private:
 	TSharedPtr<SSpinBox<int32>> BombCountSpinBoxUI;
 	TSharedPtr<STextBlock> GameStatusTextUI;
 	TSharedPtr<STextBlock> FlagCountTextUI;
-
-	// Tile buttons cache for updates
-	TMap<int32, TSharedPtr<SButton>> TileButtonsCache;
 };
