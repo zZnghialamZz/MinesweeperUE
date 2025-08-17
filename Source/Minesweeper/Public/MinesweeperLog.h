@@ -7,10 +7,14 @@
 
 MINESWEEPER_API DECLARE_LOG_CATEGORY_EXTERN(LogMinesweeper, Display, All);
 
-// NOTE(Nghia Lam): Quick log support for this project
-// ---
-// We can turn all the logging in this project on/off by change this value 1/0
+/**
+ * Logging system for the Minesweeper plugin
+ * 
+ * Provides convenient macros for different log levels with automatic function name inclusion
+ * Can be easily enabled/disabled for the entire plugin via MINESWEEPER_LOG_ENABLE
+ */
 
+// Master switch for all logging in this plugin (1 = enabled, 0 = disabled)
 #define MINESWEEPER_LOG_ENABLE 1
 
 #if MINESWEEPER_LOG_ENABLE
@@ -23,10 +27,12 @@ MINESWEEPER_API DECLARE_LOG_CATEGORY_EXTERN(LogMinesweeper, Display, All);
 
 #else
 
+// When logging is disabled, all macros become no-ops
+
 #define MS_LOG(type, msg, ...)
-#define MS_DISPLAY(msg, ...) 
+#define MS_DISPLAY(msg, ...)
 #define MS_WARNING(msg, ...)
 #define MS_ERROR(msg, ...)
 #define MS_FATAL(msg, ...)
 
-#endif
+#endif // MINESWEEPER_LOG_ENABLE

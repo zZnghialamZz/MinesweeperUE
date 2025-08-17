@@ -15,6 +15,12 @@ const ISlateStyle& FMinesweeperStyle::Get()
 	return *StyleInstance;
 }
 
+FName FMinesweeperStyle::GetStyleSetName()
+{
+	static FName StyleSetName(TEXT("MinesweeperStyle"));
+	return StyleSetName;
+}
+
 void FMinesweeperStyle::Initialize()
 {
 	if (!StyleInstance.IsValid())
@@ -31,20 +37,17 @@ void FMinesweeperStyle::Shutdown()
 	StyleInstance.Reset();
 }
 
-FName FMinesweeperStyle::GetStyleSetName()
-{
-	static FName StyleSetName(TEXT("MinesweeperStyle"));
-	return StyleSetName;
-}
-
-
-const FVector2D Icon16x16(16.0f, 16.0f);
-const FVector2D Icon20x20(20.0f, 20.0f);
-
 TSharedRef<FSlateStyleSet> FMinesweeperStyle::Create()
 {
 	TSharedRef<FSlateStyleSet> Style = MakeShareable(new FSlateStyleSet("MinesweeperStyle"));
+	
+	// Set content root to plugin's Resources directory
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("Minesweeper")->GetBaseDir() / TEXT("Resources"));
+
+	const FVector2D Icon16x16(16.0f, 16.0f);
+	const FVector2D Icon20x20(20.0f, 20.0f);
+
+	// Register plugin icon
 	Style->Set("Minesweeper.OpenMineSweeperWindow", new IMAGE_BRUSH_SVG(TEXT("SweepIcon"), Icon20x20));
 	return Style;
 }
@@ -56,3 +59,5 @@ void FMinesweeperStyle::ReloadTextures()
 		FSlateApplication::Get().GetRenderer()->ReloadTextureResources();
 	}
 }
+
+#undef RootToContentDir
