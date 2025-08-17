@@ -3,19 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Widgets/SCompoundWidget.h"
+#include "MinesweeperCore.h"
+#include "MinesweeperTypes.h"
 #include "Widgets/Input/SSpinBox.h"
+#include "Widgets/SCompoundWidget.h"
 
-struct FMinesweeperTile
-{
-	bool bIsBomb = false;
-	bool bIsRevealed = false;
-	bool bIsFlagged = false;
-	int32 AdjacentBombs = 0;
-
-	FMinesweeperTile() = default;
-};
-
+/**
+ * Main Minesweeper widget that handles the UI and game display
+ */
 class MINESWEEPER_API SMinesweeperWidget final : public SCompoundWidget
 {
 public:
@@ -27,14 +22,16 @@ public:
 private:
 	// UI generation
 	TSharedRef<SWidget> CreateControlPanel();
+	TSharedRef<SWidget> CreateGameSettingsPanel();
+	TSharedRef<SWidget> CreateGameInfoPanel();
 	TSharedRef<SWidget> CreateGameBoard();
-	TSharedRef<SWidget> CreateTileButton(const int32 X, const int32 Y);
-	FText GetTileButtonText(const int32 X, const int32 Y) const;
-	FSlateColor GetTileButtonTextColor(const int32 X, const int32 Y) const;
-	FSlateColor GetTileButtonBackgroundColor(const int32 X, const int32 Y) const;
-	bool IsTileButtonInteractable(const int32 X, const int32 Y) const;
-	void ShowEndGameDialog() const;
-	void UpdateFlagCountDisplay();
+	TSharedRef<SWidget> CreateTileButton(int32 X, int32 Y);
+
+	// UI Update Methods
+	void RefreshGameBoardUI();
+	void UpdateGameInfoDisplay();
+	void UpdateFlagCountDisplay() const;
+	void UpdateGameStatusDisplay() const;
 
 	// UI callbacks
 	FReply OnGenerateNewGameClicked();
@@ -44,48 +41,32 @@ private:
 	void OnHeightUIValueChanged(const int32 NewValue);
 	void OnBombCountUIValueChanged(const int32 NewValue);
 
-	// Game logic
-	void InitializeGame();
-	void ResetGame();
-	void EndGame(const bool bWon);
-	void CheckWinCondition();
-	void GenerateBoardTiles();
-	void PlaceBombsRandomly();
-	void CalculateAdjacentBombs();
-	void RevealAllBombsAndFlag(const bool bRevealBombAsFlag);
-	void RevealTile(const int32 X, const int32 Y);
-	void RevealAdjacentTiles(const int32 X, const int32 Y);
-	void ToggleFlag(const int32 X, const int32 Y);
-	bool IsValidCoordinate(const int32 X, const int32 Y) const;
-	int32 GetTileIndex(const int32 X, const int32 Y) const;
+	// UI Attribute Getters (for dynamic UI updates)
+	FText GetTileButtonText(const int32 X, const int32 Y) const;
+	FSlateColor GetTileButtonTextColor(const int32 X, const int32 Y) const;
+	FSlateColor GetTileButtonBackgroundColor(const int32 X, const int32 Y) const;
+	bool IsTileButtonInteractable(const int32 X, const int32 Y) const;
+
+	// Game flow
+	void InitializeNewGame();
+	void HandleGameStateChange(EMinesweeperGameState NewState);
+	void ShowEndGameDialog() const;
 
 private:
-	static constexpr int GameGridMin = 5;
-	static constexpr int GameGridMax = 50;
-	static constexpr int BombCountMin = 1;
-	static constexpr int BombCountMax = 500;
-	
-	// Game states
-	TArray<FMinesweeperTile> GameBoardTiles;
-	int32 GridWidth = 10;
-	int32 GridHeight = 10;
-	int32 BombCount = 10;
-	int32 RevealedTiles = 0;
-	int32 FlaggedTiles = 0;
-	bool bGameActive = false;
-	bool bGameWon = false;
+	// Core Game Logic
+	TUniquePtr<FMinesweeperCore> GameCore;
+
+	// UI State
+	FMinesweeperGameSettings PendingGameSettings;
 
 	// UI Components
-	TSharedPtr<class SUniformGridPanel> GameBoardGridUI;
+	TSharedPtr<class SUniformGridPanel> GameBoardGridPanelUI;
 	TSharedPtr<SSpinBox<int32>> WidthSpinBoxUI;
 	TSharedPtr<SSpinBox<int32>> HeightSpinBoxUI;
 	TSharedPtr<SSpinBox<int32>> BombCountSpinBoxUI;
 	TSharedPtr<STextBlock> GameStatusTextUI;
 	TSharedPtr<STextBlock> FlagCountTextUI;
-	int32 GridWidthUIValue = 10;
-	int32 GridHeightUIValue = 10;
-	int32 BombCountUIValue = 10;
 
 	// Tile buttons cache for updates
-	TMap<int32, TSharedPtr<SButton>> TileButtons;
+	TMap<int32, TSharedPtr<SButton>> TileButtonsCache;
 };
